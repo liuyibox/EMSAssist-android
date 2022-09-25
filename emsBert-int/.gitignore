@@ -6,3 +6,4 @@ jar/
 android/app/build/
 
 *.apk
+*.tflite

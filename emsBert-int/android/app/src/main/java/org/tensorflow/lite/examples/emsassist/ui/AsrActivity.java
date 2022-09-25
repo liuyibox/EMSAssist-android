@@ -93,9 +93,17 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private Button playAudioButton;
     private TextView resultTextview;
 
+    // emsBERT declarations
+    private TextInputEditText questionEditText;
+    private TextView contentTextView;
+    private TextToSpeech textToSpeech;
+
     private String content;
     private Handler handler;
     private QaClient qaClient;
+    //
+
+    private String textToFeed;
 
     private String wavFilename;
     private MediaPlayer mediaPlayer = new MediaPlayer();
@@ -111,18 +119,6 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         Log.v(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        int writeStoragePermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if(writeStoragePermissionCheck != PackageManager.PERMISSION_GRANTED){
-          ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-          return;
-        }
-
-        int readStoragePermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE);
-        if(readStoragePermissionCheck != PackageManager.PERMISSION_GRANTED){
-          ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
-          return;
-        }
 
         JLibrosa jLibrosa = new JLibrosa();
 
@@ -185,12 +181,20 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                             finalResult.append((char) outputArray[i]);
                         }
                     }
-                    resultTextview.setText(finalResult.toString());
+                    textToFeed = finalResult.toString();
+                    Log.i(TAG, textToFeed);
+                    resultTextview.setText(textToFeed);
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 }
             }
         });
+
+        // Setup QA client to and background thread to run inference.
+        HandlerThread handlerThread = new HandlerThread("QAClient");
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
+        qaClient = new QaClient(this);
 
     }
 
@@ -233,6 +237,40 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
 
         return getCacheDir() + wavFilename;
     }
+
+    @Override
+    protected void onStart() {
+        Log.v(TAG, "onStart");
+        super.onStart();
+        handler.post(
+                () -> {
+                    qaClient.loadModel();
+                });
+
+        textToSpeech =
+                new TextToSpeech(
+                        this,
+                        status -> {
+                            if (status == TextToSpeech.SUCCESS) {
+                                textToSpeech.setLanguage(Locale.US);
+                            } else {
+                                textToSpeech = null;
+                            }
+                        });
+    }
+
+    @Override
+    protected void onStop() {
+        Log.v(TAG, "onStop");
+        super.onStop();
+        handler.post(() -> qaClient.unload());
+
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+        }
+    }
+
 }
 
 /** Activity for doing Q&A on a specific dataset */
