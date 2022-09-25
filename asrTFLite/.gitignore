@@ -1,0 +1,8 @@
+bin/
+build/
+tmp/
+logs/
+jar/
+ASR/app/build/
+
+*.apk
