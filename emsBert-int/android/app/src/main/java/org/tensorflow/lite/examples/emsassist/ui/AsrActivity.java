@@ -14,6 +14,8 @@ limitations under the License.
 ==============================================================================*/
 package org.tensorflow.lite.examples.emsassist.ui;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -32,6 +34,8 @@ import org.tensorflow.lite.examples.emsassist.ml.QaAnswer;
 import org.tensorflow.lite.examples.emsassist.ml.QaClient;
 
 import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
@@ -61,7 +65,7 @@ import java.util.Map;
 public class AsrActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
     private MappedByteBuffer tfLiteModel;
-    private Interpreter tfLite;
+    private Interpreter tfLiteASR;
 
     private Spinner audioClipSpinner;
     private Button transcribeButton;
@@ -76,6 +80,9 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private String content;
     private Handler handler;
     private QaClient qaClient;
+
+    static private final int PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1;
+    static private final int PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
     //
 
     private String textToFeed;
@@ -94,6 +101,18 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         Log.v(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        int writeStoragePermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if(writeStoragePermissionCheck != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
+            return;
+        }
+
+        int readStoragePermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE);
+        if(readStoragePermissionCheck != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
+            return;
+        }
 
         JLibrosa jLibrosa = new JLibrosa();
 
@@ -137,15 +156,13 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                     tfLiteModel = loadModelFile(getAssets(), TFLITE_FILE);
                     Interpreter.Options tfLiteOptions = new Interpreter.Options();
                     Log.i(TAG, "Before instance");
-                    tfLite = new Interpreter(tfLiteModel, tfLiteOptions);
+                    tfLiteASR = new Interpreter(tfLiteModel, tfLiteOptions);
                     Log.i(TAG, "After instance");
 
-                    tfLite.resizeInput(0, new int[] {audioFeatureValues.length});
+                    tfLiteASR.resizeInput(0, new int[] {audioFeatureValues.length});
+                    tfLiteASR.runForMultipleInputsOutputs(inputArray, outputMap);
 
-
-                    tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
-
-                    int outputSize = tfLite.getOutputTensor(0).shape()[0];
+                    int outputSize = tfLiteASR.getOutputTensor(0).shape()[0];
                     int[] outputArray = new int[outputSize];
                     outputBuffer.rewind();
                     outputBuffer.get(outputArray);
@@ -157,10 +174,19 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                         }
                     }
                     textToFeed = finalResult.toString();
+//                    tfLiteASR.setCancelled(true);
+                    tfLiteASR.close();
                     Log.i(TAG, "asr result: " + textToFeed);
-                    String myResult = qaClient.predict(textToFeed);
+
+                    final List<QaAnswer> answers = qaClient.predict(textToFeed, content);
+//                    new Thread(new Runnable() {
+//                        public void run() {
+//                            final List<QaAnswer> answers = qaClient.predict(textToFeed, content);
+//                        }
+//                    }).start();
+
                     Log.i(TAG, "Got result from predict function on myResult");
-                    resultTextview.setText(myResult);
+                    resultTextview.setText(textToFeed);
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 }
@@ -172,7 +198,6 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
         qaClient = new QaClient(this);
-
     }
 
     @Override

@@ -38,6 +38,7 @@ public class ModelHelper {
 
   private static final String TAG = "ModelHelper";
   public static final String MODEL_PATH = "model.tflite";
+//  public static final String EMS_MODEL_PATH = "model.tflite";
   public static final String EMS_MODEL_PATH = "FineTune_BertBase4_Fitted_Desc.tflite";
   public static final String DIC_PATH = "vocab.txt";
   public static final String TEST_FILE_PATH = "test_0.txt";
