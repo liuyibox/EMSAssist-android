@@ -14,58 +14,33 @@ limitations under the License.
 ==============================================================================*/
 package org.tensorflow.lite.examples.emsassist.ui;
 
-import static android.widget.AdapterView.*;
-
-import android.Manifest;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.speech.tts.TextToSpeech;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import android.text.Editable;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.TextWatcher;
-import android.text.method.ScrollingMovementMethod;
-import android.text.style.BackgroundColorSpan;
+
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.ImageButton;
 import android.widget.TextView;
-import com.google.android.material.snackbar.Snackbar;
+
 import com.google.android.material.textfield.TextInputEditText;
 import java.util.List;
 import java.util.Locale;
 import org.tensorflow.lite.examples.emsassist.R;
-import org.tensorflow.lite.examples.emsassist.ml.LoadDatasetClient;
 import org.tensorflow.lite.examples.emsassist.ml.QaAnswer;
 import org.tensorflow.lite.examples.emsassist.ml.QaClient;
 
 import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.media.MediaPlayer;
 import android.os.Build;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
-import android.widget.TextView;
 
 import com.jlibrosa.audio.JLibrosa;
 
@@ -182,8 +157,10 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                         }
                     }
                     textToFeed = finalResult.toString();
-                    Log.i(TAG, textToFeed);
-                    resultTextview.setText(textToFeed);
+                    Log.i(TAG, "asr result: " + textToFeed);
+                    String myResult = qaClient.predict(textToFeed);
+                    Log.i(TAG, "Got result from predict function on myResult");
+                    resultTextview.setText(myResult);
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 }
@@ -270,6 +247,91 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
             textToSpeech.shutdown();
         }
     }
+
+//    private void answerQuestion(String question) {
+//        question = question.trim();
+//        if (question.isEmpty()) {
+//            questionEditText.setText(question);
+//            return;
+//        }
+//
+//        // Append question mark '?' if not ended with '?'.
+//        // This aligns with question format that trains the model.
+//        if (!question.endsWith("?")) {
+//            question += '?';
+//        }
+//        final String questionToAsk = question;
+//        questionEditText.setText(questionToAsk);
+//
+//        // Delete all pending tasks.
+//        handler.removeCallbacksAndMessages(null);
+//
+//        // Hide keyboard and dismiss focus on text edit.
+//        InputMethodManager imm =
+//                (InputMethodManager) getSystemService(AppCompatActivity.INPUT_METHOD_SERVICE);
+//        imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
+//        View focusView = getCurrentFocus();
+//        if (focusView != null) {
+//            focusView.clearFocus();
+//        }
+//
+//        // Reset content text view
+//        contentTextView.setText(content);
+//
+//        questionAnswered = false;
+//
+//        Snackbar runningSnackbar =
+//                Snackbar.make(contentTextView, "Looking up answer...", Integer.MAX_VALUE);
+//        runningSnackbar.show();
+//
+//        // Run TF Lite model to get the answer.
+//        handler.post(
+//                () -> {
+//                    long beforeTime = System.currentTimeMillis();
+//                    final List<QaAnswer> answers = qaClient.predict(questionToAsk, content);
+//                    long afterTime = System.currentTimeMillis();
+//                    double totalSeconds = (afterTime - beforeTime) / 1000.0;
+//
+//                    if (!answers.isEmpty()) {
+//                        // Get the top answer
+//                        QaAnswer topAnswer = answers.get(0);
+//                        // Show the answer.
+//                        runOnUiThread(
+//                                () -> {
+//                                    runningSnackbar.dismiss();
+//                                    presentAnswer(topAnswer);
+//
+//                                    String displayMessage = "Top answer was successfully highlighted.";
+//                                    if (DISPLAY_RUNNING_TIME) {
+//                                        displayMessage = String.format("%s %.3fs.", displayMessage, totalSeconds);
+//                                    }
+//                                    Snackbar.make(contentTextView, displayMessage, Snackbar.LENGTH_LONG).show();
+//                                    questionAnswered = true;
+//                                });
+//                    }else {
+//                        Log.v(TAG, "QA inference returns an empty list!");
+//                    }
+//                });
+//    }
+//
+//    private void presentAnswer(QaAnswer answer) {
+//        // Highlight answer.
+//        Spannable spanText = new SpannableString(content);
+//        int offset = content.indexOf(answer.text, 0);
+//        if (offset >= 0) {
+//            spanText.setSpan(
+//                    new BackgroundColorSpan(getColor(R.color.tfe_qa_color_highlight)),
+//                    offset,
+//                    offset + answer.text.length(),
+//                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+//        }
+//        contentTextView.setText(spanText);
+//
+//        // Use TTS to speak out the answer.
+//        if (textToSpeech != null) {
+//            textToSpeech.speak(answer.text, TextToSpeech.QUEUE_FLUSH, null, answer.text);
+//        }
+//    }
 
 }
 
