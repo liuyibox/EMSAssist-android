@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -465,7 +466,7 @@ public class QaClient implements AutoCloseable {
 
   @SuppressLint("DefaultLocale")
   public synchronized float[] run_pp_test_for_fitted_am(String que_ry){
-    que_ry = "mental status changes mental status changes septicemia pulmonary edema septicemia";
+//    que_ry = "mental status changes mental status changes septicemia pulmonary edema septicemia";
     Log.i(TAG, "Called the run_pp_test with query : " + que_ry);
 
     float[][] emsPredLogits = new float[1][NUM_PRED_CLASSES];
@@ -511,13 +512,33 @@ public class QaClient implements AutoCloseable {
     Log.i(TAG, "After inference");
 
     StringBuilder outputStr = new StringBuilder();
+    float [] predFloat = new float[emsPredLogits[0].length];
     for (int out_idx = 0; out_idx < emsPredLogits[0].length; out_idx++) {
+
       outputStr.append(String.format("%.7f", emsPredLogits[0][out_idx])).append(", ");
+      predFloat[out_idx] = emsPredLogits[0][out_idx];
       if ((out_idx + 1) % 5 == 0) {
         outputStr.append("\n");
       }
     }
+
     Log.v(TAG, String.format("Output Predication: \n%s", outputStr.toString()));
+
+////    Arrays.sort(predFloat);
+//    float[] predSorted = new float[predFloat.length];
+//    for (int i = 0; i < predFloat.length; i++){
+//      Log.i(TAG, Float.toString(predFloat[i]));
+//      predSorted[predFloat.length - i] = predFloat[i];
+//    }
+//    predFloat = null;
+//    for (int i = 0; i < predSorted.length; i++){
+//      Log.i(TAG, Float.toString(predSorted[i]));
+//    }
+
+
+//    for (int i; i<outputStr.length(); i++){
+//
+//    }
 //
 //
 //    StringBuilder cur_out = new StringBuilder(String.format("%.7f", emsPredLogits[0]));
@@ -562,7 +583,7 @@ public class QaClient implements AutoCloseable {
 //    }
 //    Log.v(TAG, String.format("finish writing result to result file %s and latency file %s",
 //            "myOutPut", "myOutPutLatency"));
-    return emsPredLogits[0];
+    return predFloat;
   }
 
 
@@ -573,7 +594,7 @@ public class QaClient implements AutoCloseable {
    * @return
    */
   @WorkerThread
-  public synchronized List<QaAnswer> predict(String query, String Content) {
+  public synchronized float [] predict(String query, String Content) {
     Log.i(TAG, "Just called the predict function");
 
 //    run_pp_test_for_no_fitted();
@@ -581,7 +602,7 @@ public class QaClient implements AutoCloseable {
 //    run_pp_test_for_fitted();
 
 //    run_pp_test_for_fitted_batch_am();
-    run_pp_test_for_fitted_am(query);
+    return run_pp_test_for_fitted_am(query);
 
 //    run_pp_test_for_fitted_batch_am_2(query);
 
@@ -705,7 +726,7 @@ public class QaClient implements AutoCloseable {
 //            input_idx, mask_idx, segment_idx));
 //    Log.v(TAG, String.format("Outputs: probabilities idx: %d\n", prob_idx));
 ////    Log.v(TAG, "Convert answers...");
-    List<QaAnswer> answers = new ArrayList<>();
+//    List<QaAnswer> answers = new ArrayList<>();
 //    List<QaAnswer> answers = getBestAnswers(startLogits[0], endLogits[0], feature);
 
 //    int maxIndex = argMax(emsPredLogits[0]);
@@ -715,7 +736,7 @@ public class QaClient implements AutoCloseable {
 //    }
 
 //    Log.v(TAG, "Finish.");
-    return answers;
+//    return answers;
   }
 
   private synchronized int argMax(float[] arr){

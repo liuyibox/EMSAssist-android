@@ -178,15 +178,21 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                     tfLiteASR.close();
                     Log.i(TAG, "asr result: " + textToFeed);
 
-                    final List<QaAnswer> answers = qaClient.predict(textToFeed, content);
+                    final float[] answers = qaClient.predict(textToFeed, content);
 //                    new Thread(new Runnable() {
 //                        public void run() {
 //                            final List<QaAnswer> answers = qaClient.predict(textToFeed, content);
 //                        }
 //                    }).start();
-
+                    String display = "Prediction result for '" +textToFeed + "' is : \n" + buildString(answers);
                     Log.i(TAG, "Got result from predict function on myResult");
-                    resultTextview.setText(textToFeed);
+//                    String newText = "mental status changes mental status changes septicemia pulmonary edema septicemia\n\n\n" +
+//                            "9914113, 0.9361117\n" +
+//                            "9914139, 0.0222392\n" +
+//                            "9914001, 0.0154717\n" +
+//                            "9914127, 0.0079135\n" +
+//                            "9914085, 0.0030968\n";
+                    resultTextview.setText(display);
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 }
@@ -198,6 +204,17 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
         qaClient = new QaClient(this);
+    }
+
+    private String buildString(float[] answers) {
+        StringBuilder newStr = new StringBuilder();
+        for (int i = 0; i < answers.length; i++) {
+            newStr.append(String.format("%.7f", answers[i])).append(", ");
+            if ((i + 1) % 5 == 0) {
+                newStr.append("\n");
+            }
+        }
+        return newStr.toString();
     }
 
     @Override
