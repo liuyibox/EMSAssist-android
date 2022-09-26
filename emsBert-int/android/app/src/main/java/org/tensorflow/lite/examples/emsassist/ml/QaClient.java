@@ -182,20 +182,25 @@ public class QaClient implements AutoCloseable {
         }
         List<String> data_str_batch = testData.get(test_idx);
 
+
+
         for (int data_idx = 0; data_idx < BATCH_SIZE; data_idx++) {
 
           String data_str = data_str_batch.get(data_idx);
           String[] sample_label = data_str.split("\t");
           String query = sample_label[0];
-          String label_name = sample_label[1];
-          Integer label_id = label_map.get(label_name);
-
+//          String label_name = sample_label[1];
+//          Integer label_id = label_map.get(label_name);
+//          Log.v(TAG, String.format("before feature conversion in the batch_am"));
           EMSBertFeature emsBertFeature = featureConverter.convert(query);
+//          Log.v(TAG, String.format("after feature conversion in the batch_am"));
+
           inputIds[data_idx] = emsBertFeature.inputIds;
           inputMask[data_idx] = emsBertFeature.inputMask;
           segmentIds[data_idx] = emsBertFeature.segmentIds;
 
         }
+
 
         inputs[0] = inputIds;
         //      inputs[1] = inputMask;
@@ -207,7 +212,9 @@ public class QaClient implements AutoCloseable {
         output.put(0, emsPredLogits);
 
         long infer_start = System.currentTimeMillis();
+        Log.v(TAG, String.format("before inference in the batch_am"));
         tflite.runForMultipleInputsOutputs(inputs, output);
+        Log.v(TAG, String.format("after inference in the batch_am"));
         long infer_latency = System.currentTimeMillis() - infer_start;
         total_latency += infer_latency;
 
@@ -411,6 +418,7 @@ public class QaClient implements AutoCloseable {
     Log.i(TAG, "Returning emsPredLogits [0]");
     return emsPredLogits [0];
   }
+
   public synchronized String run_pp_test_for_fitted_batch_am_2(String query){
     Log.v(TAG, "query at beginning:" + query);
     query = "mental status changes mental status changes septicemia pulmonary edema septicemia";
@@ -440,7 +448,6 @@ public class QaClient implements AutoCloseable {
 
     output.put(0, emsPredLogits);
     Log.v(TAG, "before emsBert inference");
-    Log.v(TAG, String.valueOf(inputs));
     tflite.runForMultipleInputsOutputs(inputs, output);
     Log.v(TAG, "after emsBert inference");
 
@@ -456,107 +463,107 @@ public class QaClient implements AutoCloseable {
   }
 
 
-//  @SuppressLint("DefaultLocale")
-//  public synchronized float[] run_pp_test_for_fitted_batch_am(String que_ry){
-//    que_ry = "mental status changes mental status changes septicemia pulmonary edema septicemia";
-//    Log.i(TAG, "Called the run_pp_test with query : " + que_ry);
+  @SuppressLint("DefaultLocale")
+  public synchronized float[] run_pp_test_for_fitted_am(String que_ry){
+    que_ry = "mental status changes mental status changes septicemia pulmonary edema septicemia";
+    Log.i(TAG, "Called the run_pp_test with query : " + que_ry);
+
+    float[][] emsPredLogits = new float[1][NUM_PRED_CLASSES];
+//    int[] inputIds = new int[MAX_SEQ_LEN];
+//    int[] inputMask = new int[MAX_SEQ_LEN];
+//    int[] segmentIds = new int[MAX_SEQ_LEN];
+    int[][] inputs = new int[3][MAX_SEQ_LEN];
+
+    String output_str_to_save = "";
+    Map<Integer, Object> output = new HashMap<>();
+    long total_latency = 0;
+
+    String query = que_ry;
+
+//    tflite.run
+
+    int input_idx = tflite.getInputIndex("serving_default_input_word_ids:0");
+    int mask_idx = tflite.getInputIndex("serving_default_input_mask:0");
+    int segment_idx = tflite.getInputIndex("serving_default_input_type_ids:0");
+
+    Log.i(TAG, "Called the EMSBertFeature");
+    EMSBertFeature emsBertFeature = featureConverter.convert(query);
+    int[] inputIds = emsBertFeature.inputIds;
+    int[] inputMask = emsBertFeature.inputMask;
+    int[] segmentIds = emsBertFeature.segmentIds;
+
+    inputs[0] = inputIds;
+    inputs[2] = inputMask;
+    inputs[1] = segmentIds;
+
+    Log.i(TAG, "inputIds " + input_idx + " " + inputIds.length +  ":" + inputIds);
+    Log.i(TAG, "inputMask " + mask_idx + " " + inputMask.length +  ":" +  inputMask);
+    Log.i(TAG, "segmentIds " + segment_idx + " " + segmentIds.length +  ":" +  segmentIds);
+
+    output.put(0, emsPredLogits);
+
+//    long infer_start = System.currentTimeMillis();
+    Log.i(TAG, "Called the tflite model for inference...");
+    tflite.runForMultipleInputsOutputs(inputs, output);
+//    tflite.run(inputs, emsPredLogits);
+//    long infer_latency = System.currentTimeMillis() - infer_start;
+//    total_latency += infer_latency;
+    Log.i(TAG, "After inference");
+
+    StringBuilder outputStr = new StringBuilder();
+    for (int out_idx = 0; out_idx < emsPredLogits[0].length; out_idx++) {
+      outputStr.append(String.format("%.7f", emsPredLogits[0][out_idx])).append(", ");
+      if ((out_idx + 1) % 5 == 0) {
+        outputStr.append("\n");
+      }
+    }
+    Log.v(TAG, String.format("Output Predication: \n%s", outputStr.toString()));
 //
-//    float[][] emsPredLogits = new float[1][NUM_PRED_CLASSES];
-////    int[] inputIds = new int[MAX_SEQ_LEN];
-////    int[] inputMask = new int[MAX_SEQ_LEN];
-////    int[] segmentIds = new int[MAX_SEQ_LEN];
-//    int[][] inputs = new int[3][MAX_SEQ_LEN];
 //
-//    String output_str_to_save = "";
-//    Map<Integer, Object> output = new HashMap<>();
-//    long total_latency = 0;
+//    StringBuilder cur_out = new StringBuilder(String.format("%.7f", emsPredLogits[0]));
+//    cur_out.append(" ");
+//    for (int i = 1; i < emsPredLogits.length; i++) {
+//      cur_out.append(String.format("%.7f", emsPredLogits[i])).append(" ");
+//    }
+//    cur_out.append("\n");
+//    output_str_to_save += cur_out;
 //
-//    String query = que_ry;
 //
-////    tflite.run
 //
-//    int input_idx = tflite.getInputIndex("serving_default_input_word_ids:0");
-//    int mask_idx = tflite.getInputIndex("serving_default_input_mask:0");
-//    int segment_idx = tflite.getInputIndex("serving_default_input_type_ids:0");
+//    double averaged_latency = 3;
+//    //    double averaged_latency = total_latency;
+//    Log.v(TAG, String.format("Averaged time latency: %s", averaged_latency));
 //
-//    Log.i(TAG, "Called the EMSBertFeature");
-//    EMSBertFeature emsBertFeature = featureConverter.convert(query);
-//    int[] inputIds = emsBertFeature.inputIds;
-//    int[] inputMask = emsBertFeature.inputMask;
-//    int[] segmentIds = emsBertFeature.segmentIds;
+//    //      String tflite_test_result_file = ModelHelper.TFLITE_TEST_RESULT_FILE;
+//    try {
+//      // write out the inference result
+//      String model_name = ModelHelper.EMS_MODEL_PATH.split("\\.")[0];
+//      File prob_txt = new File(PROB_TEXT_PATH, model_name + "_" + "myOutPut");
+//      Log.v(TAG, String.format("we are trying to create a file for result %s", prob_txt.toString()));
+//      prob_txt.createNewFile();
+//      FileWriter fw = new FileWriter(PROB_TEXT_PATH + model_name + "_" + "myOutPut");
+//      fw.write(output_str_to_save);
+//      fw.flush();
+//      fw.close();
 //
-//    inputs[0] = inputIds;
-//    inputs[2] = inputMask;
-//    inputs[1] = segmentIds;
+//      //write out the inference latency
+//      File latency_txt = new File(PROB_TEXT_PATH, model_name + "_" + "myOutPutLatency");
+//      Log.v(TAG, String.format("we are trying to create a file for latency %s", latency_txt.toString()));
+//      latency_txt.createNewFile();
+//      fw = new FileWriter(PROB_TEXT_PATH + model_name + "_" + "myOutPutLatency");
+//      Log.v(TAG, String.format("inference average latency %s", averaged_latency));
+//      fw.write(String.valueOf(averaged_latency));
+//      fw.flush();
+//      fw.close();
 //
-//    Log.i(TAG, "inputIds " + input_idx + " " + inputIds.length +  ":" + inputIds);
-//    Log.i(TAG, "inputMask " + mask_idx + " " + inputMask.length +  ":" +  inputMask);
-//    Log.i(TAG, "segmentIds " + segment_idx + " " + segmentIds.length +  ":" +  segmentIds);
 //
-//    output.put(0, emsPredLogits);
-//
-////    long infer_start = System.currentTimeMillis();
-//    Log.i(TAG, "Called the tflite model for inference...");
-//    tflite.runForMultipleInputsOutputs(inputs, output);
-////    tflite.run(inputs, emsPredLogits);
-////    long infer_latency = System.currentTimeMillis() - infer_start;
-////    total_latency += infer_latency;
-//    Log.i(TAG, "After inference");
-//    return emsPredLogits[0];
-//
-////    StringBuilder outputStr = new StringBuilder();
-////    for (int out_idx = 0; out_idx < emsPredLogits.length; out_idx++) {
-////      outputStr.append(String.format("%.7f", emsPredLogits[out_idx])).append(", ");
-////      if ((out_idx + 1) % 5 == 0) {
-////        outputStr.append("\n");
-////      }
-////    }
-////    Log.v(TAG, String.format("Output Predication: \n%s", outputStr.toString()));
-////
-////
-////    StringBuilder cur_out = new StringBuilder(String.format("%.7f", emsPredLogits[0]));
-////    cur_out.append(" ");
-////    for (int i = 1; i < emsPredLogits.length; i++) {
-////      cur_out.append(String.format("%.7f", emsPredLogits[i])).append(" ");
-////    }
-////    cur_out.append("\n");
-////    output_str_to_save += cur_out;
-////
-////
-////
-////    double averaged_latency = 3;
-////    //    double averaged_latency = total_latency;
-////    Log.v(TAG, String.format("Averaged time latency: %s", averaged_latency));
-////
-////    //      String tflite_test_result_file = ModelHelper.TFLITE_TEST_RESULT_FILE;
-////    try {
-////      // write out the inference result
-////      String model_name = ModelHelper.EMS_MODEL_PATH.split("\\.")[0];
-////      File prob_txt = new File(PROB_TEXT_PATH, model_name + "_" + "myOutPut");
-////      Log.v(TAG, String.format("we are trying to create a file for result %s", prob_txt.toString()));
-////      prob_txt.createNewFile();
-////      FileWriter fw = new FileWriter(PROB_TEXT_PATH + model_name + "_" + "myOutPut");
-////      fw.write(output_str_to_save);
-////      fw.flush();
-////      fw.close();
-////
-////      //write out the inference latency
-////      File latency_txt = new File(PROB_TEXT_PATH, model_name + "_" + "myOutPutLatency");
-////      Log.v(TAG, String.format("we are trying to create a file for latency %s", latency_txt.toString()));
-////      latency_txt.createNewFile();
-////      fw = new FileWriter(PROB_TEXT_PATH + model_name + "_" + "myOutPutLatency");
-////      Log.v(TAG, String.format("inference average latency %s", averaged_latency));
-////      fw.write(String.valueOf(averaged_latency));
-////      fw.flush();
-////      fw.close();
-////
-////
-////    } catch (IOException e) {
-////      e.printStackTrace();
-////    }
-////    Log.v(TAG, String.format("finish writing result to result file %s and latency file %s",
-////            "myOutPut", "myOutPutLatency"));
-//  }
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    }
+//    Log.v(TAG, String.format("finish writing result to result file %s and latency file %s",
+//            "myOutPut", "myOutPutLatency"));
+    return emsPredLogits[0];
+  }
 
 
   /**
@@ -573,9 +580,10 @@ public class QaClient implements AutoCloseable {
 
 //    run_pp_test_for_fitted();
 
-    run_pp_test_for_fitted_batch_am();
+//    run_pp_test_for_fitted_batch_am();
+    run_pp_test_for_fitted_am(query);
 
-//    return run_pp_test_for_fitted_batch_am(query);
+//    run_pp_test_for_fitted_batch_am_2(query);
 
 
 //    Log.v(TAG, "TFLite model: " + ModelHelper.MODEL_PATH + " running...");
