@@ -27,6 +27,9 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.google.android.material.textfield.TextInputEditText;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Locale;
 import org.tensorflow.lite.examples.emsassist.R;
@@ -71,6 +74,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private Button transcribeButton;
     private Button playAudioButton;
     private TextView resultTextview;
+    private TextView predictionView;
 
     // emsBERT declarations
     private TextInputEditText questionEditText;
@@ -95,6 +99,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private final static int DEFAULT_AUDIO_DURATION = -1;
     private final static String[] WAV_FILENAMES = {"audio_clip_1.wav", "audio_clip_2.wav", "audio_clip_3.wav", "audio_clip_4.wav"};
     private final static String TFLITE_FILE = "CONFORMER.tflite";
+    private final static String predictionFileName = "fitted_label_names.txt";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -140,6 +145,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
 
         transcribeButton = findViewById(R.id.recognize);
         resultTextview = findViewById(R.id.result);
+        predictionView = findViewById(R.id.pred_view);
         transcribeButton.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
@@ -173,26 +179,17 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                             finalResult.append((char) outputArray[i]);
                         }
                     }
-                    textToFeed = finalResult.toString();
+                    textToFeed = "Transcribed Text: \n" + finalResult + "\n";
 //                    tfLiteASR.setCancelled(true);
                     tfLiteASR.close();
                     Log.i(TAG, "asr result: " + textToFeed);
 
-                    final float[] answers = qaClient.predict(textToFeed, content);
-//                    new Thread(new Runnable() {
-//                        public void run() {
-//                            final List<QaAnswer> answers = qaClient.predict(textToFeed, content);
-//                        }
-//                    }).start();
-                    String display = "Prediction result for '" +textToFeed + "' is : \n" + buildString(answers);
+                    final String answers = qaClient.predict(textToFeed, content);
+                    String display = "Predicted top 5 protocols :\n" + answers;
                     Log.i(TAG, "Got result from predict function on myResult");
-//                    String newText = "mental status changes mental status changes septicemia pulmonary edema septicemia\n\n\n" +
-//                            "9914113, 0.9361117\n" +
-//                            "9914139, 0.0222392\n" +
-//                            "9914001, 0.0154717\n" +
-//                            "9914127, 0.0079135\n" +
-//                            "9914085, 0.0030968\n";
-                    resultTextview.setText(display);
+                    resultTextview.setText(textToFeed);
+                    predictionView.setText(display);
+//                    predictionView.setText(top5Prediction);
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 }
@@ -257,6 +254,37 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         return getCacheDir() + wavFilename;
     }
 
+    public static String convertStreamToString(InputStream is) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append("\n");
+        }
+        reader.close();
+        return sb.toString();
+    }
+
+    public static String getStringFromFile (String filePath) throws Exception {
+        File fl = new File(filePath);
+        FileInputStream fin = new FileInputStream(fl);
+        String ret = convertStreamToString(fin);
+        //Make sure you close all streams.
+        fin.close();
+        return ret;
+    }
+
+    public static String matchPrediction (String filePath) throws Exception {
+        File fl = new File(filePath);
+        FileInputStream fin = new FileInputStream(fl);
+        String ret = convertStreamToString(fin);
+        //Make sure you close all streams.
+        fin.close();
+        return ret;
+    }
+
+
+
     @Override
     protected void onStart() {
         Log.v(TAG, "onStart");
@@ -289,316 +317,4 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
             textToSpeech.shutdown();
         }
     }
-
-//    private void answerQuestion(String question) {
-//        question = question.trim();
-//        if (question.isEmpty()) {
-//            questionEditText.setText(question);
-//            return;
-//        }
-//
-//        // Append question mark '?' if not ended with '?'.
-//        // This aligns with question format that trains the model.
-//        if (!question.endsWith("?")) {
-//            question += '?';
-//        }
-//        final String questionToAsk = question;
-//        questionEditText.setText(questionToAsk);
-//
-//        // Delete all pending tasks.
-//        handler.removeCallbacksAndMessages(null);
-//
-//        // Hide keyboard and dismiss focus on text edit.
-//        InputMethodManager imm =
-//                (InputMethodManager) getSystemService(AppCompatActivity.INPUT_METHOD_SERVICE);
-//        imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
-//        View focusView = getCurrentFocus();
-//        if (focusView != null) {
-//            focusView.clearFocus();
-//        }
-//
-//        // Reset content text view
-//        contentTextView.setText(content);
-//
-//        questionAnswered = false;
-//
-//        Snackbar runningSnackbar =
-//                Snackbar.make(contentTextView, "Looking up answer...", Integer.MAX_VALUE);
-//        runningSnackbar.show();
-//
-//        // Run TF Lite model to get the answer.
-//        handler.post(
-//                () -> {
-//                    long beforeTime = System.currentTimeMillis();
-//                    final List<QaAnswer> answers = qaClient.predict(questionToAsk, content);
-//                    long afterTime = System.currentTimeMillis();
-//                    double totalSeconds = (afterTime - beforeTime) / 1000.0;
-//
-//                    if (!answers.isEmpty()) {
-//                        // Get the top answer
-//                        QaAnswer topAnswer = answers.get(0);
-//                        // Show the answer.
-//                        runOnUiThread(
-//                                () -> {
-//                                    runningSnackbar.dismiss();
-//                                    presentAnswer(topAnswer);
-//
-//                                    String displayMessage = "Top answer was successfully highlighted.";
-//                                    if (DISPLAY_RUNNING_TIME) {
-//                                        displayMessage = String.format("%s %.3fs.", displayMessage, totalSeconds);
-//                                    }
-//                                    Snackbar.make(contentTextView, displayMessage, Snackbar.LENGTH_LONG).show();
-//                                    questionAnswered = true;
-//                                });
-//                    }else {
-//                        Log.v(TAG, "QA inference returns an empty list!");
-//                    }
-//                });
-//    }
-//
-//    private void presentAnswer(QaAnswer answer) {
-//        // Highlight answer.
-//        Spannable spanText = new SpannableString(content);
-//        int offset = content.indexOf(answer.text, 0);
-//        if (offset >= 0) {
-//            spanText.setSpan(
-//                    new BackgroundColorSpan(getColor(R.color.tfe_qa_color_highlight)),
-//                    offset,
-//                    offset + answer.text.length(),
-//                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-//        }
-//        contentTextView.setText(spanText);
-//
-//        // Use TTS to speak out the answer.
-//        if (textToSpeech != null) {
-//            textToSpeech.speak(answer.text, TextToSpeech.QUEUE_FLUSH, null, answer.text);
-//        }
-//    }
-
 }
-
-/** Activity for doing Q&A on a specific dataset */
-//public class AsrActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener{
-//
-//
-//  private static final String DATASET_POSITION_KEY = "DATASET_POSITION";
-//  private static final String TAG = "QaActivity";
-//  private static final boolean DISPLAY_RUNNING_TIME = false;
-//
-//  private TextInputEditText questionEditText;
-//  private TextView contentTextView;
-//  private TextToSpeech textToSpeech;
-//
-//  private boolean questionAnswered = false;
-//  private String content;
-//  private Handler handler;
-//  private QaClient qaClient;
-//
-//  static private final int PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1;
-//  static private final int PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
-//
-//  public static Intent newInstance(Context context, int datasetPosition) {
-//    Intent intent = new Intent(context, AsrActivity.class);
-//    intent.putExtra(DATASET_POSITION_KEY, datasetPosition);
-//    return intent;
-//  }
-//
-//  @Override
-//  protected void onCreate(Bundle savedInstanceState) {
-//    Log.v(TAG, "onCreate");
-//    super.onCreate(savedInstanceState);
-//    setContentView(R.layout.tfe_qa_activity_qa);
-//
-//
-//      int writeStoragePermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
-//      if(writeStoragePermissionCheck != PackageManager.PERMISSION_GRANTED){
-//          ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
-//          return;
-//      }
-//
-//      int readStoragePermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE);
-//      if(readStoragePermissionCheck != PackageManager.PERMISSION_GRANTED){
-//          ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
-//          return;
-//      }
-//
-//    // Get content of the selected dataset.
-//    int datasetPosition = getIntent().getIntExtra(DATASET_POSITION_KEY, -1);
-//    LoadDatasetClient datasetClient = new LoadDatasetClient(this);
-//
-//    // Show the dataset title.
-//    TextView titleText = findViewById(R.id.title_text);
-//    titleText.setText(datasetClient.getTitles()[datasetPosition]);
-//
-//    // Show the text content of the selected dataset.
-//    content = datasetClient.getContent(datasetPosition);
-//    contentTextView = findViewById(R.id.content_text);
-//    contentTextView.setText(content);
-//    contentTextView.setMovementMethod(new ScrollingMovementMethod());
-//
-//
-//    // Setup ask button.
-//    ImageButton askButton = findViewById(R.id.ask_button);
-//    askButton.setOnClickListener(
-//        view -> answerQuestion(questionEditText.getText().toString()));
-//
-//    // Setup text edit where users can input their question.
-//    questionEditText = findViewById(R.id.question_edit_text);
-//    questionEditText.setOnFocusChangeListener(
-//        (view, hasFocus) -> {
-//          // If we already answer current question, clear the question so that user can input a new
-//          // one.
-//          if (hasFocus && questionAnswered) {
-//            questionEditText.setText(null);
-//          }
-//        });
-//    questionEditText.addTextChangedListener(
-//        new TextWatcher() {
-//          @Override
-//          public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
-//
-//          @Override
-//          public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//            // Only allow clicking Ask button if there is a question.
-//            boolean shouldAskButtonActive = !charSequence.toString().isEmpty();
-//            askButton.setClickable(shouldAskButtonActive);
-//            askButton.setImageResource(
-//                shouldAskButtonActive ? R.drawable.ic_ask_active : R.drawable.ic_ask_inactive);
-//          }
-//
-//          @Override
-//          public void afterTextChanged(Editable editable) {}
-//        });
-//    questionEditText.setOnKeyListener(
-//        (v, keyCode, event) -> {
-//          if (event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_ENTER) {
-//            answerQuestion(questionEditText.getText().toString());
-//          }
-//          return false;
-//        });
-//
-//    // Setup QA client to and background thread to run inference.
-//    HandlerThread handlerThread = new HandlerThread("QAClient");
-//    handlerThread.start();
-//    handler = new Handler(handlerThread.getLooper());
-//    qaClient = new QaClient(this);
-//  }
-//
-//  @Override
-//  protected void onStart() {
-//    Log.v(TAG, "onStart");
-//    super.onStart();
-//    handler.post(
-//        () -> {
-//          qaClient.loadModel();
-//        });
-//
-//    textToSpeech =
-//        new TextToSpeech(
-//            this,
-//            status -> {
-//              if (status == TextToSpeech.SUCCESS) {
-//                textToSpeech.setLanguage(Locale.US);
-//              } else {
-//                textToSpeech = null;
-//              }
-//            });
-//  }
-//
-//  @Override
-//  protected void onStop() {
-//    Log.v(TAG, "onStop");
-//    super.onStop();
-//    handler.post(() -> qaClient.unload());
-//
-//    if (textToSpeech != null) {
-//      textToSpeech.stop();
-//      textToSpeech.shutdown();
-//    }
-//  }
-//
-//  private void answerQuestion(String question) {
-//    question = question.trim();
-//    if (question.isEmpty()) {
-//      questionEditText.setText(question);
-//      return;
-//    }
-//
-//    // Append question mark '?' if not ended with '?'.
-//    // This aligns with question format that trains the model.
-//    if (!question.endsWith("?")) {
-//      question += '?';
-//    }
-//    final String questionToAsk = question;
-//    questionEditText.setText(questionToAsk);
-//
-//    // Delete all pending tasks.
-//    handler.removeCallbacksAndMessages(null);
-//
-//    // Hide keyboard and dismiss focus on text edit.
-//    InputMethodManager imm =
-//        (InputMethodManager) getSystemService(AppCompatActivity.INPUT_METHOD_SERVICE);
-//    imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
-//    View focusView = getCurrentFocus();
-//    if (focusView != null) {
-//      focusView.clearFocus();
-//    }
-//
-//    // Reset content text view
-//    contentTextView.setText(content);
-//
-//    questionAnswered = false;
-//
-//    Snackbar runningSnackbar =
-//        Snackbar.make(contentTextView, "Looking up answer...", Integer.MAX_VALUE);
-//    runningSnackbar.show();
-//
-//    // Run TF Lite model to get the answer.
-//    handler.post(
-//        () -> {
-//          long beforeTime = System.currentTimeMillis();
-//          final List<QaAnswer> answers = qaClient.predict(questionToAsk, content);
-//          long afterTime = System.currentTimeMillis();
-//          double totalSeconds = (afterTime - beforeTime) / 1000.0;
-//
-//          if (!answers.isEmpty()) {
-//            // Get the top answer
-//            QaAnswer topAnswer = answers.get(0);
-//            // Show the answer.
-//            runOnUiThread(
-//                () -> {
-//                  runningSnackbar.dismiss();
-//                  presentAnswer(topAnswer);
-//
-//                  String displayMessage = "Top answer was successfully highlighted.";
-//                  if (DISPLAY_RUNNING_TIME) {
-//                    displayMessage = String.format("%s %.3fs.", displayMessage, totalSeconds);
-//                  }
-//                  Snackbar.make(contentTextView, displayMessage, Snackbar.LENGTH_LONG).show();
-//                  questionAnswered = true;
-//                });
-//          }else {
-//              Log.v(TAG, "QA inference returns an empty list!");
-//          }
-//        });
-//  }
-//
-//  private void presentAnswer(QaAnswer answer) {
-//    // Highlight answer.
-//    Spannable spanText = new SpannableString(content);
-//    int offset = content.indexOf(answer.text, 0);
-//    if (offset >= 0) {
-//      spanText.setSpan(
-//          new BackgroundColorSpan(getColor(R.color.tfe_qa_color_highlight)),
-//          offset,
-//          offset + answer.text.length(),
-//          Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-//    }
-//    contentTextView.setText(spanText);
-//
-//    // Use TTS to speak out the answer.
-//    if (textToSpeech != null) {
-//      textToSpeech.speak(answer.text, TextToSpeech.QUEUE_FLUSH, null, answer.text);
-//    }
-//  }
-//}

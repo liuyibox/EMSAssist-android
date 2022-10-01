@@ -133,6 +133,32 @@ public class ModelHelper {
     return label_map;
   }
 
+  public static HashMap<Integer, String> loadFittedLabelsRev(Context context) {
+    HashMap<Integer, String> label_map = new HashMap<>();
+    List<String> labels = new ArrayList<>();
+    BufferedReader reader = null;
+    int total_line_num = 0;
+    try {
+      reader = new BufferedReader(
+              new InputStreamReader(context.getAssets().open(FITTED_LABEL_FILE_PATH)));
+      String mLine;
+      while ((mLine = reader.readLine()) != null) {
+        labels.add(mLine);
+        if(total_line_num < 1){
+          Log.v(TAG, String.format("reading label at line %d is %s", total_line_num, mLine));
+        }
+        total_line_num += 1;
+      }
+    } catch (IOException e) {
+      Log.e(TAG, e.getMessage());
+    }
+    Log.i(TAG,String.format("total labels: %d\n", total_line_num));
+    for(int i = 0; i < labels.size(); i++){
+      label_map.put(i, labels.get(i));
+    }
+    return label_map;
+  }
+
   /** Load tflite model from context. */
   public static MappedByteBuffer loadModelFile(Context context) throws IOException {
     return loadModelFile(context.getAssets());
