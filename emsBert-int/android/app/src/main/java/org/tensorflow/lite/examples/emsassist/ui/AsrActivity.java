@@ -30,10 +30,8 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.List;
 import java.util.Locale;
 import org.tensorflow.lite.examples.emsassist.R;
-import org.tensorflow.lite.examples.emsassist.ml.QaAnswer;
 import org.tensorflow.lite.examples.emsassist.ml.QaClient;
 
 import androidx.annotation.RequiresApi;
@@ -89,16 +87,17 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     static private final int PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
     //
 
-    private String textToFeed;
+    private static String[] WAV_FILENAMES = {"", "", "", "", ""};
+    private static String [] fileList;
 
+    private String textToFeed;
     private String wavFilename;
     private MediaPlayer mediaPlayer = new MediaPlayer();
 
     private final static String TAG = "TfLiteASR";
     private final static int SAMPLE_RATE = 16000;
     private final static int DEFAULT_AUDIO_DURATION = -1;
-    private final static String[] WAV_FILENAMES = {"audio_clip_1.wav", "audio_clip_2.wav", "audio_clip_3.wav", "audio_clip_4.wav"};
-    private final static String TFLITE_FILE = "CONFORMER.tflite";
+    private final static String TFLITE_FILE = "pretrained_librispeech_train_ss_test_concatenated_epoch50.tflite";
     private final static String predictionFileName = "fitted_label_names.txt";
 
     @Override
@@ -119,8 +118,41 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
             return;
         }
 
-        JLibrosa jLibrosa = new JLibrosa();
+        /** Lets find all files in audio folder **/
+//        if (listAssetFiles("audio"))
+//            WAV_FILENAMES = fileList;
+        try {
+            fileList = getAssets().list("");
+            String ext = "";
+            Log.i(TAG, "fileList length = " + fileList.length);
+//            for(int i=0; i < fileList.length-1; i++) {
+//                ext = fileList[i].substring(fileList[i].lastIndexOf("."));
+//                Log.i(TAG, "Extension is: " + ext);
+//                if (ext.equals("wav"))
+//                    WAV_FILENAMES[i] = fileList[i];
+//            }
+            WAV_FILENAMES = fileList;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+        Map<String,String> trueText = new HashMap<>();
+        Map<String,String> truePrediction = new HashMap<>();
+
+        trueText.put("sss8.wav","suicidal ideations change in mental status not otherwise specified violent behavior anxiety not otherwise specified poisoning by unspecified drugs medicaments and biological substances undetermined");
+        trueText.put("sss81.wav","nausea with vomiting unspecified dehydration hypotension unspecified vomiting");
+        trueText.put("sss30.wav","disorientation unspecified urinary tract infection site not specified fever with chills urinary tract infection site not specified asthenia not otherwise specified change in mental status not otherwise specified");
+        trueText.put("sss62.wav","diarrhea unspecified generalized abdominal pain left lower quadrant pain nausea with vomiting unspecified right lower quadrant pain vomiting");
+        trueText.put("sss95.wav","chest pain unspecified accelerated angina shortness of breath anxiety not otherwise specified");
+
+        truePrediction.put("sss8.wav","9914113");
+        truePrediction.put("sss81.wav","9914127");
+        truePrediction.put("sss30.wav","9914113");
+        truePrediction.put("sss62.wav","9914109");
+        truePrediction.put("sss95.wav","9914117");
+
+
+        JLibrosa jLibrosa = new JLibrosa();
         audioClipSpinner = findViewById(R.id.audio_clip_spinner);
         ArrayAdapter<String>adapter = new ArrayAdapter<String>(AsrActivity.this,
                 android.R.layout.simple_spinner_item, WAV_FILENAMES);
@@ -217,6 +249,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     @Override
     public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
         wavFilename = WAV_FILENAMES[position];
+        Log.i(TAG, "Selected Audio File: " + wavFilename);
     }
 
     @Override
@@ -252,6 +285,28 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         }
 
         return getCacheDir() + wavFilename;
+    }
+
+    private boolean listAssetFiles(String path) {
+        try {
+            fileList = getAssets().list(path);
+            if (fileList.length > 0) {
+                // This is a folder
+                Log.i(TAG, fileList.toString());
+                for (String file : fileList) {
+                    if (!listAssetFiles(path + "/" + file))
+                        Log.i(TAG, "Ignoring folder");
+                    else {
+                        Log.i(TAG, "File: " + file);
+                        // This is a file
+                        // TODO: add file name to an array list
+                    }
+                }
+            }
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
     }
 
     public static String convertStreamToString(InputStream is) throws Exception {
