@@ -131,6 +131,8 @@ public class QaClient<myMap> implements AutoCloseable {
 //    que_ry = "mental status changes mental status changes septicemia pulmonary edema septicemia";
     Log.i(TAG, "Called the run_pp_test with query : " + que_ry);
 
+    long infer_prepros_start = System.currentTimeMillis();
+
     float[][] emsPredLogits = new float[1][NUM_PRED_CLASSES];
 //    int[] inputIds = new int[MAX_SEQ_LEN];
 //    int[] inputMask = new int[MAX_SEQ_LEN];
@@ -164,27 +166,31 @@ public class QaClient<myMap> implements AutoCloseable {
     Log.i(TAG, "segmentIds " + segment_idx + " " + segmentIds.length +  ":" +  segmentIds);
 
     output.put(0, emsPredLogits);
+    long infer_prepros_latency = System.currentTimeMillis() - infer_prepros_start;
+    Log.i(TAG, "******** emsBert preprocessing Latency : " + infer_prepros_latency);
 
-//    long infer_start = System.currentTimeMillis();
+    long infer_start = System.currentTimeMillis();
     Log.i(TAG, "Called the tflite model for inference...");
     tflite.runForMultipleInputsOutputs(inputs, output);
-//    tflite.run(inputs, emsPredLogits);
-//    long infer_latency = System.currentTimeMillis() - infer_start;
-//    total_latency += infer_latency;
+    long infer_latency = System.currentTimeMillis() - infer_start;
+    Log.i(TAG, "******** emsBert inference Latency : " + infer_latency);
+    //    total_latency += infer_latency;
     Log.i(TAG, "After inference");
 
-    StringBuilder outputStr = new StringBuilder();
-    float [] predFloat = new float[emsPredLogits[0].length];
-    for (int out_idx = 0; out_idx < emsPredLogits[0].length; out_idx++) {
+//    StringBuilder outputStr = new StringBuilder();
+//    float [] predFloat = new float[emsPredLogits[0].length];
+//    for (int out_idx = 0; out_idx < emsPredLogits[0].length; out_idx++) {
+//
+//      outputStr.append(String.format("%.7f", emsPredLogits[0][out_idx])).append(", ");
+//      predFloat[out_idx] = emsPredLogits[0][out_idx];
+//      if ((out_idx + 1) % 5 == 0) {
+//        outputStr.append("\n");
+//      }
+//    }
+//    Log.v(TAG, String.format("Output Predication: \n%s", outputStr.toString()));
 
-      outputStr.append(String.format("%.7f", emsPredLogits[0][out_idx])).append(", ");
-      predFloat[out_idx] = emsPredLogits[0][out_idx];
-      if ((out_idx + 1) % 5 == 0) {
-        outputStr.append("\n");
-      }
-    }
+    long infer_postpros_start = System.currentTimeMillis();
 
-    Log.v(TAG, String.format("Output Predication: \n%s", outputStr.toString()));
     Log.i(TAG, "Fitted label map : \n" + fitted_label_map_rev.toString());
 
     /** Create an unsorted Map with Index **/
@@ -222,6 +228,9 @@ public class QaClient<myMap> implements AutoCloseable {
       outputStr2.append(sortedMap.get(i));
       outputStr2.append("\n");
     }
+
+    long infer_postpros_latency = System.currentTimeMillis() - infer_postpros_start;
+    Log.i(TAG, "******** emsBert postprocessing Latency : " + infer_postpros_latency);
     //Log.i(TAG, "return map: " + returnMap);
     Log.i(TAG, outputStr2.toString());
     //return predFloat;

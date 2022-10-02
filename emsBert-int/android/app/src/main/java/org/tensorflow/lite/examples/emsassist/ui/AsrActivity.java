@@ -30,6 +30,9 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import org.tensorflow.lite.examples.emsassist.R;
 import org.tensorflow.lite.examples.emsassist.ml.QaClient;
@@ -47,6 +50,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.FilenameUtils;
 import com.jlibrosa.audio.JLibrosa;
 
 import org.tensorflow.lite.Interpreter;
@@ -61,6 +65,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 
 
 public class AsrActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
@@ -87,7 +92,8 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     static private final int PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
     //
 
-    private static String[] WAV_FILENAMES = {"", "", "", "", ""};
+//    private static String[] WAV_FILENAMES = {};
+    private static List<String> WAV_FILENAMES;
     private static String [] fileList;
 
     private String textToFeed;
@@ -119,22 +125,21 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         }
 
         /** Lets find all files in audio folder **/
-//        if (listAssetFiles("audio"))
-//            WAV_FILENAMES = fileList;
+
+        WAV_FILENAMES = new ArrayList<>();
         try {
             fileList = getAssets().list("");
             String ext = "";
-            Log.i(TAG, "fileList length = " + fileList.length);
-//            for(int i=0; i < fileList.length-1; i++) {
-//                ext = fileList[i].substring(fileList[i].lastIndexOf("."));
-//                Log.i(TAG, "Extension is: " + ext);
-//                if (ext.equals("wav"))
-//                    WAV_FILENAMES[i] = fileList[i];
-//            }
-            WAV_FILENAMES = fileList;
+            for(String file :  fileList) {
+                ext = FilenameUtils.getExtension(file);;
+                if (ext.equals("wav")) {
+                    WAV_FILENAMES.add(file);
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        Log.d(TAG, "The array list is : \n" + WAV_FILENAMES);
 
         Map<String,String> trueText = new HashMap<>();
         Map<String,String> truePrediction = new HashMap<>();
@@ -183,6 +188,8 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
             @Override
             public void onClick(View view) {
                 try {
+                    Log.i(TAG, "Conformer preprocessing starts after Click");
+                    long conf_prepros_start = System.currentTimeMillis();
                     float audioFeatureValues[] = jLibrosa.loadAndRead(copyWavFileToCache(wavFilename), SAMPLE_RATE, DEFAULT_AUDIO_DURATION);
 
                     Object[] inputArray = {audioFeatureValues};
@@ -198,8 +205,16 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                     Log.i(TAG, "After instance");
 
                     tfLiteASR.resizeInput(0, new int[] {audioFeatureValues.length});
-                    tfLiteASR.runForMultipleInputsOutputs(inputArray, outputMap);
+                    long conf_prepros_latency = System.currentTimeMillis() - conf_prepros_start;
+                    Log.i(TAG, "******** Conformer preprocessing Latency : " + conf_prepros_latency);
 
+                    long conf_infer_start = System.currentTimeMillis();
+                    Log.i(TAG, "Called the Conformer model for inference...");
+                    tfLiteASR.runForMultipleInputsOutputs(inputArray, outputMap);
+                    long conf_infer_latency = System.currentTimeMillis() - conf_infer_start;
+                    Log.i(TAG, "******** Conformer Latency : " + conf_infer_latency);
+
+                    long conf_postpros_start = System.currentTimeMillis();
                     int outputSize = tfLiteASR.getOutputTensor(0).shape()[0];
                     int[] outputArray = new int[outputSize];
                     outputBuffer.rewind();
@@ -211,9 +226,11 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                             finalResult.append((char) outputArray[i]);
                         }
                     }
+                    long conf_postpros_latency = System.currentTimeMillis() - conf_postpros_start;
+                    Log.i(TAG, "******** Conformer postprocessing Latency : " + conf_postpros_latency);
                     textToFeed = "Transcribed Text: \n" + finalResult + "\n";
 //                    tfLiteASR.setCancelled(true);
-                    tfLiteASR.close();
+//                    tfLiteASR.close();
                     Log.i(TAG, "asr result: " + textToFeed);
 
                     final String answers = qaClient.predict(textToFeed, content);
@@ -248,7 +265,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
-        wavFilename = WAV_FILENAMES[position];
+        wavFilename = WAV_FILENAMES.get(position);
         Log.i(TAG, "Selected Audio File: " + wavFilename);
     }
 
