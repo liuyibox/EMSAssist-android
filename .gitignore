@@ -1,0 +1,9 @@
+bin/
+build/
+tmp/
+logs/
+jar/
+android/app/build/
+
+*.apk
+*.tflite

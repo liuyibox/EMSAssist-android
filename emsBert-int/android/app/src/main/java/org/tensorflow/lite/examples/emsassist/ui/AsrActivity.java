@@ -104,6 +104,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private final static int SAMPLE_RATE = 16000;
     private final static int DEFAULT_AUDIO_DURATION = -1;
     private final static String TFLITE_FILE = "pretrained_librispeech_train_ss_test_concatenated_epoch50.tflite";
+//    private final static String TFLITE_FILE = "CONFORMER.tflite";
     private final static String predictionFileName = "fitted_label_names.txt";
 
     @Override
@@ -228,13 +229,13 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                     }
                     long conf_postpros_latency = System.currentTimeMillis() - conf_postpros_start;
                     Log.i(TAG, "******** Conformer postprocessing Latency : " + conf_postpros_latency);
-                    textToFeed = "Transcribed Text: \n" + finalResult + "\n";
+                    textToFeed = "Original:\n" + trueText.get(wavFilename) + "\nTranscribed: \n" + finalResult + "\n";
 //                    tfLiteASR.setCancelled(true);
 //                    tfLiteASR.close();
                     Log.i(TAG, "asr result: " + textToFeed);
 
                     final String answers = qaClient.predict(textToFeed, content);
-                    String display = "Predicted top 5 protocols :\n" + answers;
+                    String display = "True Protocol:\n" + truePrediction.get(wavFilename) + "\nPredicted top 5 protocols :\n" + answers;
                     Log.i(TAG, "Got result from predict function on myResult");
                     resultTextview.setText(textToFeed);
                     predictionView.setText(display);
