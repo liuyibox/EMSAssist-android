@@ -16,7 +16,9 @@ package org.tensorflow.lite.examples.emsassist.ui;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.speech.tts.TextToSpeech;
@@ -49,6 +51,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.FilenameUtils;
 import com.jlibrosa.audio.JLibrosa;
@@ -76,6 +79,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private Spinner audioClipSpinner;
     private Button transcribeButton;
     private Button playAudioButton;
+    private Button playEMSAssistButton;
     private TextView resultTextview;
     private TextView predictionView;
 
@@ -99,6 +103,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private String textToFeed;
     private String wavFilename;
     private MediaPlayer mediaPlayer = new MediaPlayer();
+    public static MediaRecorder mediaRecorder;
 
     private final static String TAG = "TfLiteASR";
     private final static int SAMPLE_RATE = 16000;
@@ -106,12 +111,15 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private final static String TFLITE_FILE = "emsConformer.tflite";
 //    private final static String TFLITE_FILE = "CONFORMER.tflite";
     private final static String predictionFileName = "fitted_label_names.txt";
+    private static String mFileName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.v(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mediaRecorder = new MediaRecorder();
 
         int writeStoragePermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if(writeStoragePermissionCheck != PackageManager.PERMISSION_GRANTED){
@@ -246,12 +254,117 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
             }
         });
 
+
+        playEMSAssistButton = findViewById(R.id.playEMSAssist);
+        playEMSAssistButton.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @Override
+            public void onClick(View view) {
+                try {
+
+                    startRecording();
+
+//                    Log.i(TAG, "Conformer preprocessing starts after Click");
+//                    long conf_prepros_start = System.currentTimeMillis();
+//                    float audioFeatureValues[] = jLibrosa.loadAndRead(copyWavFileToCache(wavFilename), SAMPLE_RATE, DEFAULT_AUDIO_DURATION);
+//
+//                    Object[] inputArray = {audioFeatureValues};
+//                    IntBuffer outputBuffer = IntBuffer.allocate(2000);
+//
+//                    Map<Integer, Object> outputMap = new HashMap<>();
+//                    outputMap.put(0, outputBuffer);
+//
+//                    tfLiteModel = loadModelFile(getAssets(), TFLITE_FILE);
+//                    Interpreter.Options tfLiteOptions = new Interpreter.Options();
+//                    Log.i(TAG, "Before instance");
+//                    tfLiteASR = new Interpreter(tfLiteModel, tfLiteOptions);
+//                    Log.i(TAG, "After instance");
+//
+//                    tfLiteASR.resizeInput(0, new int[] {audioFeatureValues.length});
+//                    long conf_prepros_latency = System.currentTimeMillis() - conf_prepros_start;
+//                    Log.i(TAG, "******** Conformer preprocessing Latency : " + conf_prepros_latency);
+//
+//                    long conf_infer_start = System.currentTimeMillis();
+//                    Log.i(TAG, "Called the Conformer model for inference...");
+//                    tfLiteASR.runForMultipleInputsOutputs(inputArray, outputMap);
+//                    long conf_infer_latency = System.currentTimeMillis() - conf_infer_start;
+//                    Log.i(TAG, "******** Conformer Latency : " + conf_infer_latency);
+//
+//                    long conf_postpros_start = System.currentTimeMillis();
+//                    int outputSize = tfLiteASR.getOutputTensor(0).shape()[0];
+//                    int[] outputArray = new int[outputSize];
+//                    outputBuffer.rewind();
+//                    outputBuffer.get(outputArray);
+//                    StringBuilder finalResult = new StringBuilder();
+//                    for (int i=0; i < outputSize; i++) {
+//                        char c = (char) outputArray[i];
+//                        if (outputArray[i] != 0) {
+//                            finalResult.append((char) outputArray[i]);
+//                        }
+//                    }
+//                    long conf_postpros_latency = System.currentTimeMillis() - conf_postpros_start;
+//                    Log.i(TAG, "******** Conformer postprocessing Latency : " + conf_postpros_latency);
+//                    textToFeed = "Original:\n" + trueText.get(wavFilename) + "\nTranscribed: \n" + finalResult + "\n";
+////                    tfLiteASR.setCancelled(true);
+////                    tfLiteASR.close();
+//                    Log.i(TAG, "asr result: " + textToFeed);
+//
+//                    final String answers = qaClient.predict(textToFeed, content);
+//                    String display = "True Protocol:\n" + truePrediction.get(wavFilename) + "\nPredicted top 5 protocols :\n" + answers;
+//                    Log.i(TAG, "Got result from predict function on myResult");
+//                    resultTextview.setText(textToFeed);
+//                    predictionView.setText(display);
+
+                } catch (Exception e) {
+                    Log.e(TAG, e.getMessage());
+                }
+            }
+
+        });
+
         // Setup QA client to and background thread to run inference.
         HandlerThread handlerThread = new HandlerThread("QAClient");
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
         qaClient = new QaClient(this);
     }
+
+    private void startRecording() {
+
+        mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
+        mFileName += "/Audio/Recordings/recording.wav";
+
+        mediaRecorder = new MediaRecorder();
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+        mediaRecorder.setOutputFile(mFileName);
+        try {
+            mediaRecorder.prepare();
+            Toast.makeText(
+                    getApplicationContext(),  "recording saved to " + mFileName, Toast.LENGTH_SHORT)
+                    .show();
+        } catch (IOException e) {
+            Log.e("TAG", "prepare() failed");
+        }
+        mediaRecorder.start();
+        resultTextview.setText("Recording Started");
+        mediaRecorder.reset();
+    }
+
+    public void stopRecording() {
+
+        // below method will stop
+        // the audio recording.
+        mRecorder.stop();
+
+        // below method will release
+        // the media recorder class.
+        mRecorder.release();
+        mRecorder = null;
+        resultTextview.setText("Recording Stopped");
+    }
+
 
     private String buildString(float[] answers) {
         StringBuilder newStr = new StringBuilder();
@@ -355,6 +468,8 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         fin.close();
         return ret;
     }
+
+
 
 
 

@@ -73,14 +73,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="10dp"
-                android:text="EMSAssist"
+                android:text="Hold to Speak"
                 android:textAlignment="gravity" />
 
         </LinearLayout>
 
         <TextView
             android:id="@+id/result"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:textSize="16dp"></TextView>
