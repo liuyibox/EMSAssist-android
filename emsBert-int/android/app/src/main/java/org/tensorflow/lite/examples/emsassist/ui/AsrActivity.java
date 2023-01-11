@@ -103,7 +103,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private final static String TAG = "TfLiteASR";
     private final static int SAMPLE_RATE = 16000;
     private final static int DEFAULT_AUDIO_DURATION = -1;
-    private final static String TFLITE_FILE = "pretrained_librispeech_train_ss_test_concatenated_epoch50.tflite";
+    private final static String TFLITE_FILE = "emsConformer.tflite";
 //    private final static String TFLITE_FILE = "CONFORMER.tflite";
     private final static String predictionFileName = "fitted_label_names.txt";
 

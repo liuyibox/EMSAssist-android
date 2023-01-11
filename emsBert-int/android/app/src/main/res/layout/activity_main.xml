@@ -15,44 +15,66 @@
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        tools:layout_editor_absoluteY="4dp"
-        tools:ignore="MissingConstraints">
-
-        <TextView
-            android:id="@+id/prompt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_marginBottom="20dp"
-            android:text="Choose you audio clip:"
-            android:textSize="25dp"></TextView>
-
-        <Spinner
-            android:id="@+id/audio_clip_spinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_marginBottom="20dp" />
+        tools:ignore="MissingConstraints"
+        tools:layout_editor_absoluteY="4dp">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_marginBottom="16dp"
             android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/play"
+            <TextView
+                android:id="@+id/prompt"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="10dp"
-                android:text="Play audio" />
+                android:layout_marginBottom="20dp"
+                android:gravity="center"
+                android:text="Choose you audio clip:"
+                android:textSize="14sp"></TextView>
+
+            <Spinner
+                android:id="@+id/audio_clip_spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="311dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/play"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:text="Play audio" />
+
+                <Button
+                    android:id="@+id/recognize"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Transcribe" />
+
+            </LinearLayout>
 
             <Button
-                android:id="@+id/recognize"
-                android:layout_width="wrap_content"
+                android:id="@+id/playEMSAssist"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Transcribe" />
+                android:layout_marginRight="10dp"
+                android:text="EMSAssist"
+                android:textAlignment="gravity" />
 
         </LinearLayout>
 
