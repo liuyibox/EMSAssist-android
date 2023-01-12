@@ -1,46 +1,46 @@
-9914001
-9914005
-9914011
-9914013
-9914015
-9914017
-9914019
-9914023
-9914027
-9914029
-9914035
-9914053
-9914061
-9914077
-9914079
-9914083
-9914085
-9914093
-9914099
-9914101
-9914103
-9914105
-9914107
-9914109
-9914111
-9914113
-9914115
-9914117
-9914121
-9914123
-9914125
-9914127
-9914135
-9914137
-9914139
-9914141
-9914145
-9914147
-9914151
-9914155
-9914157
-9914163
-9914199
-9914207
-9914221
-9914223
+9914001 Airway
+9914005 Airway-Obstruction/Foreign Body
+9914011 Cardiac Arrest-Asystole
+9914013 Cardiac Arrest-Hypothermia-Therapeutic
+9914015 Cardiac Arrest-Pulseless Electrical Activity
+9914017 Cardiac Arrest-Ventricular Fibrillation/Pulseless Ventricular Tachycardia
+9914019 Cardiac Arrest-Post Resuscitation Care
+9914023 Environmental-Cold Exposure
+9914027 Environmental-Heat Exposure/Exhaustion
+9914029 Environmental-Heat Stroke/Hyperthermia
+9914035 Exposure-Biological/Infectious
+9914053 General-Behavioral/Patient Restraint
+9914061 General-Fever
+9914077 Injury-Amputation
+9914079 Injury-Bites and Envenomations-Land
+9914083 Injury-Bleeding/ Hemorrhage Control
+9914085 Injury-Burns-Thermal
+9914093 Injury-Drowning/Near Drowning
+9914099 Injury-Eye
+9914101 Injury-Head
+9914103 Injury-Impaled Object
+9914105 Injury-Multisystem
+9914107 Injury-Spinal Cord
+9914109 Medical-Abdominal Pain
+9914111 Medical-Allergic Reaction/Anaphylaxis
+9914113 Medical-Altered Mental Status
+9914115 Medical-Bradycardia
+9914117 Medical-Cardiac Chest Pain
+9914121 Medical-Hyperglycemia
+9914123 Medical-Hypertension
+9914125 Medical-Hypoglycemia/Diabetic Emergency
+9914127 Medical-Hypotension/Shock (Non-Trauma)
+9914135 General-Overdose/Poisoning/Toxic Ingestion
+9914137 Medical-Pulmonary Edema/CHF
+9914139 Medical-Respiratory Distress/Asthma/COPD/Reactive Airway
+9914141 Medical-Seizure
+9914145 Medical-Stroke/TIA
+9914147 Medical-Supraventricular Tachycardia (Including Atrial Fibrillation)
+9914151 Medical-Ventricular Tachycardia (With Pulse)
+9914155 OB/GYN-Childbirth/Labor/Delivery
+9914157 OB/GYN-Eclampsia
+9914163 OB/GYN-Post-partum Hemorrhage
+9914199 Medical-Tachycardia
+9914207 Injury-General Trauma Management
+9914221 Medical-Respiratory Distress-Bronchiolitis
+9914223 Medical-Respiratory Distress-Croup

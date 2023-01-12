@@ -174,11 +174,17 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         trueText.put("sss62.wav","diarrhea unspecified generalized abdominal pain left lower quadrant pain nausea with vomiting unspecified right lower quadrant pain vomiting");
         trueText.put("sss95.wav","chest pain unspecified accelerated angina shortness of breath anxiety not otherwise specified");
 
-        truePrediction.put("sss8.wav","9914113");
-        truePrediction.put("sss81.wav","9914127");
-        truePrediction.put("sss30.wav","9914113");
-        truePrediction.put("sss62.wav","9914109");
-        truePrediction.put("sss95.wav","9914117");
+//        truePrediction.put("sss8.wav","9914113");
+//        truePrediction.put("sss81.wav","9914127");
+//        truePrediction.put("sss30.wav","9914113");
+//        truePrediction.put("sss62.wav","9914109");
+//        truePrediction.put("sss95.wav","9914117");
+
+        truePrediction.put("sss8.wav","9914113 Medical-Altered Mental Status");
+        truePrediction.put("sss81.wav","9914127 Medical-Hypotension/Shock (Non-Trauma)");
+        truePrediction.put("sss30.wav","9914113 Medical-Altered Mental Status");
+        truePrediction.put("sss62.wav","9914109 Medical-Abdominal Pain");
+        truePrediction.put("sss95.wav","9914117 Medical-Cardiac Chest Pain");
 
 
         JLibrosa jLibrosa = new JLibrosa();
@@ -252,13 +258,13 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                     }
                     long conf_postpros_latency = System.currentTimeMillis() - conf_postpros_start;
                     Log.i(TAG, "******** Conformer postprocessing Latency : " + conf_postpros_latency);
-                    textToFeed = "Original:\n" + trueText.get(wavFilename) + "\nTranscribed: \n" + finalResult + "\n";
+                    textToFeed = "Original:\n" + trueText.get(wavFilename) + "\n\nTranscribed: \n" + finalResult + "\n";
 //                    tfLiteASR.setCancelled(true);
 //                    tfLiteASR.close();
                     Log.i(TAG, "asr result: " + textToFeed);
 
                     final String answers = qaClient.predict(textToFeed, content);
-                    String display = "True Protocol:\n" + truePrediction.get(wavFilename) + "\nPredicted top 5 protocols :\n" + answers;
+                    String display = "\nTrue Protocol:\n" + truePrediction.get(wavFilename) + "\n\nPredicted top 5 protocols :\n" + answers;
                     Log.i(TAG, "Got result from predict function on myResult");
                     resultTextview.setText(textToFeed);
                     predictionView.setText(display);
@@ -277,10 +283,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
             public void onClick(View view) {
                 try {
 
-
-
                     Log.i(TAG, "before click mRecorder state: " + mRecorder.getState());
-
                     if (WavAudioRecorder.State.INITIALIZING == mRecorder.getState()) {
 
                         String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Audio/Recordings/";
@@ -353,13 +356,15 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                         }
                         long conf_postpros_latency = System.currentTimeMillis() - conf_postpros_start;
                         Log.i(TAG, "******** Conformer postprocessing Latency : " + conf_postpros_latency);
-                        textToFeed = "Original:\n" + trueText.get(wavFilename) + "\nTranscribed: \n" + finalResult + "\n";
+//                        textToFeed = "Original:\n" + trueText.get(wavFilename) + "\nTranscribed: \n" + finalResult + "\n";
+                        textToFeed = "\nTranscribed: \n" + finalResult + "\n";
 //                    tfLiteASR.setCancelled(true);
 //                    tfLiteASR.close();
                         Log.i(TAG, "asr result: " + textToFeed);
 
                         final String answers = qaClient.predict(textToFeed, content);
-                        String display = "True Protocol:\n" + truePrediction.get(wavFilename) + "\nPredicted top 5 protocols :\n" + answers;
+//                        String display = "True Protocol:\n" + truePrediction.get(wavFilename) + "\nPredicted top 5 protocols :\n" + answers;
+                        String display = "\nPredicted top 5 protocols :\n" + answers;
                         Log.i(TAG, "Got result from predict function on myResult");
                         resultTextview.setText(textToFeed);
                         predictionView.setText(display);

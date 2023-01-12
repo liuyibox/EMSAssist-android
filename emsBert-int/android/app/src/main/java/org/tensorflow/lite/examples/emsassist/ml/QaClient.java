@@ -225,7 +225,7 @@ public class QaClient<myMap> implements AutoCloseable {
       //returnMap.put(sortedMap.get(i), fitted_label_map_rev.get(i_map));
       outputStr2.append(fitted_label_map_rev.get(i_map));
       outputStr2.append("\t\t");
-      outputStr2.append(sortedMap.get(i));
+      outputStr2.append(String.format("%.2f", sortedMap.get(i)));
       outputStr2.append("\n");
     }
 
