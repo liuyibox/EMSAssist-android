@@ -16,6 +16,7 @@ package org.tensorflow.lite.examples.emsassist.ui;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.media.AudioFormat;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
@@ -32,8 +33,10 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import org.tensorflow.lite.examples.emsassist.R;
@@ -94,7 +97,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
 
     static private final int PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1;
     static private final int PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
-    //
+    static private final int PERMISSIONS_REQUEST_RECORD = 1;
 
 //    private static String[] WAV_FILENAMES = {};
     private static List<String> WAV_FILENAMES;
@@ -104,6 +107,9 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private String wavFilename;
     private MediaPlayer mediaPlayer = new MediaPlayer();
     public static MediaRecorder mediaRecorder;
+    public static boolean STATE_MIC = true;
+    private WavAudioRecorder mRecorder;
+    private String mRecordFilePath;
 
     private final static String TAG = "TfLiteASR";
     private final static int SAMPLE_RATE = 16000;
@@ -120,6 +126,9 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         setContentView(R.layout.activity_main);
 
         mediaRecorder = new MediaRecorder();
+        mRecorder = WavAudioRecorder.getInstanse();
+//        Log.i(TAG, "mRecorder sample rate: " + mRecorder.sRate);
+//        Log.i(TAG, "mRecorder state: " + mRecorder.getState());
 
         int writeStoragePermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if(writeStoragePermissionCheck != PackageManager.PERMISSION_GRANTED){
@@ -130,6 +139,12 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         int readStoragePermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE);
         if(readStoragePermissionCheck != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
+            return;
+        }
+
+        int recordPermissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
+        if(recordPermissionCheck != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD);
             return;
         }
 
@@ -262,59 +277,95 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
             public void onClick(View view) {
                 try {
 
-                    startRecording();
 
-//                    Log.i(TAG, "Conformer preprocessing starts after Click");
-//                    long conf_prepros_start = System.currentTimeMillis();
-//                    float audioFeatureValues[] = jLibrosa.loadAndRead(copyWavFileToCache(wavFilename), SAMPLE_RATE, DEFAULT_AUDIO_DURATION);
-//
-//                    Object[] inputArray = {audioFeatureValues};
-//                    IntBuffer outputBuffer = IntBuffer.allocate(2000);
-//
-//                    Map<Integer, Object> outputMap = new HashMap<>();
-//                    outputMap.put(0, outputBuffer);
-//
-//                    tfLiteModel = loadModelFile(getAssets(), TFLITE_FILE);
-//                    Interpreter.Options tfLiteOptions = new Interpreter.Options();
-//                    Log.i(TAG, "Before instance");
-//                    tfLiteASR = new Interpreter(tfLiteModel, tfLiteOptions);
-//                    Log.i(TAG, "After instance");
-//
-//                    tfLiteASR.resizeInput(0, new int[] {audioFeatureValues.length});
-//                    long conf_prepros_latency = System.currentTimeMillis() - conf_prepros_start;
-//                    Log.i(TAG, "******** Conformer preprocessing Latency : " + conf_prepros_latency);
-//
-//                    long conf_infer_start = System.currentTimeMillis();
-//                    Log.i(TAG, "Called the Conformer model for inference...");
-//                    tfLiteASR.runForMultipleInputsOutputs(inputArray, outputMap);
-//                    long conf_infer_latency = System.currentTimeMillis() - conf_infer_start;
-//                    Log.i(TAG, "******** Conformer Latency : " + conf_infer_latency);
-//
-//                    long conf_postpros_start = System.currentTimeMillis();
-//                    int outputSize = tfLiteASR.getOutputTensor(0).shape()[0];
-//                    int[] outputArray = new int[outputSize];
-//                    outputBuffer.rewind();
-//                    outputBuffer.get(outputArray);
-//                    StringBuilder finalResult = new StringBuilder();
-//                    for (int i=0; i < outputSize; i++) {
-//                        char c = (char) outputArray[i];
-//                        if (outputArray[i] != 0) {
-//                            finalResult.append((char) outputArray[i]);
-//                        }
+
+                    Log.i(TAG, "before click mRecorder state: " + mRecorder.getState());
+
+                    if (WavAudioRecorder.State.INITIALIZING == mRecorder.getState()) {
+
+                        String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Audio/Recordings/";
+                        String wavFileName = (new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())).format(new Date()) + ".wav";
+                        mRecordFilePath = filePath + wavFileName;
+                        Log.i(TAG, "mRecorder output path: " + mRecordFilePath);
+
+                        mRecorder.setOutputFile(mRecordFilePath);
+                        mRecorder.prepare();
+                        mRecorder.start();
+                        playEMSAssistButton.setText(R.string.click_to_stop);
+//                        STATE_MIC = false;
+                    } else if (WavAudioRecorder.State.ERROR == mRecorder.getState()) {
+//                        mRecorder.release();
+                        mRecorder = WavAudioRecorder.getInstanse();
+//                        mRecorder.setOutputFile(mRecordFilePath);
+                        playEMSAssistButton.setText(R.string.click_to_record);
+                    } else {
+                        mRecorder.stop();
+                        mRecorder.reset();
+                        playEMSAssistButton.setText(R.string.click_to_record);
 //                    }
-//                    long conf_postpros_latency = System.currentTimeMillis() - conf_postpros_start;
-//                    Log.i(TAG, "******** Conformer postprocessing Latency : " + conf_postpros_latency);
-//                    textToFeed = "Original:\n" + trueText.get(wavFilename) + "\nTranscribed: \n" + finalResult + "\n";
-////                    tfLiteASR.setCancelled(true);
-////                    tfLiteASR.close();
-//                    Log.i(TAG, "asr result: " + textToFeed);
 //
-//                    final String answers = qaClient.predict(textToFeed, content);
-//                    String display = "True Protocol:\n" + truePrediction.get(wavFilename) + "\nPredicted top 5 protocols :\n" + answers;
-//                    Log.i(TAG, "Got result from predict function on myResult");
-//                    resultTextview.setText(textToFeed);
-//                    predictionView.setText(display);
+//                    if(STATE_MIC){
+//                        startRecording();
+//                        playEMSAssistButton.setText(R.string.click_to_stop);
+//                        STATE_MIC = false;
+//                    }else{
+//                        stopRecording();
+//                        playEMSAssistButton.setText(R.string.click_to_record);
+//                        STATE_MIC = true;
 
+                        Log.i(TAG, "Conformer preprocessing starts after Click");
+                        long conf_prepros_start = System.currentTimeMillis();
+                        float audioFeatureValues[] = jLibrosa.loadAndRead(mRecordFilePath, SAMPLE_RATE, DEFAULT_AUDIO_DURATION);
+
+                        Object[] inputArray = {audioFeatureValues};
+                        IntBuffer outputBuffer = IntBuffer.allocate(2000);
+
+                        Map<Integer, Object> outputMap = new HashMap<>();
+                        outputMap.put(0, outputBuffer);
+
+                        tfLiteModel = loadModelFile(getAssets(), TFLITE_FILE);
+                        Interpreter.Options tfLiteOptions = new Interpreter.Options();
+                        Log.i(TAG, "Before instance");
+                        tfLiteASR = new Interpreter(tfLiteModel, tfLiteOptions);
+                        Log.i(TAG, "After instance");
+
+                        tfLiteASR.resizeInput(0, new int[] {audioFeatureValues.length});
+                        long conf_prepros_latency = System.currentTimeMillis() - conf_prepros_start;
+                        Log.i(TAG, "******** Conformer preprocessing Latency : " + conf_prepros_latency);
+
+                        long conf_infer_start = System.currentTimeMillis();
+                        Log.i(TAG, "Called the Conformer model for inference...");
+                        tfLiteASR.runForMultipleInputsOutputs(inputArray, outputMap);
+                        long conf_infer_latency = System.currentTimeMillis() - conf_infer_start;
+                        Log.i(TAG, "******** Conformer Latency : " + conf_infer_latency);
+
+                        long conf_postpros_start = System.currentTimeMillis();
+                        int outputSize = tfLiteASR.getOutputTensor(0).shape()[0];
+                        int[] outputArray = new int[outputSize];
+                        outputBuffer.rewind();
+                        outputBuffer.get(outputArray);
+                        StringBuilder finalResult = new StringBuilder();
+                        for (int i=0; i < outputSize; i++) {
+                            char c = (char) outputArray[i];
+                            if (outputArray[i] != 0) {
+                                finalResult.append((char) outputArray[i]);
+                            }
+                        }
+                        long conf_postpros_latency = System.currentTimeMillis() - conf_postpros_start;
+                        Log.i(TAG, "******** Conformer postprocessing Latency : " + conf_postpros_latency);
+                        textToFeed = "Original:\n" + trueText.get(wavFilename) + "\nTranscribed: \n" + finalResult + "\n";
+//                    tfLiteASR.setCancelled(true);
+//                    tfLiteASR.close();
+                        Log.i(TAG, "asr result: " + textToFeed);
+
+                        final String answers = qaClient.predict(textToFeed, content);
+                        String display = "True Protocol:\n" + truePrediction.get(wavFilename) + "\nPredicted top 5 protocols :\n" + answers;
+                        Log.i(TAG, "Got result from predict function on myResult");
+                        resultTextview.setText(textToFeed);
+                        predictionView.setText(display);
+                    }
+
+                    Log.i(TAG, "after click mRecorder state: " + mRecorder.getState());
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 }
@@ -330,39 +381,34 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     }
 
     private void startRecording() {
+        String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Audio/Recordings/";
+        String wavFileName = (new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())).format(new Date()) + ".wav";
 
-        mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
-        mFileName += "/Audio/Recordings/recording.wav";
+        mFileName = filePath + wavFileName;
 
         mediaRecorder = new MediaRecorder();
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
-        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+        mediaRecorder.setOutputFormat(AudioFormat.ENCODING_PCM_16BIT);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
         mediaRecorder.setOutputFile(mFileName);
         try {
             mediaRecorder.prepare();
-            Toast.makeText(
-                    getApplicationContext(),  "recording saved to " + mFileName, Toast.LENGTH_SHORT)
-                    .show();
         } catch (IOException e) {
             Log.e("TAG", "prepare() failed");
         }
         mediaRecorder.start();
-        resultTextview.setText("Recording Started");
-        mediaRecorder.reset();
+        Toast.makeText(
+                getApplicationContext(),  "recording started", Toast.LENGTH_SHORT)
+                .show();
     }
 
     public void stopRecording() {
-
-        // below method will stop
-        // the audio recording.
-        mRecorder.stop();
-
-        // below method will release
-        // the media recorder class.
-        mRecorder.release();
-        mRecorder = null;
-        resultTextview.setText("Recording Stopped");
+        mediaRecorder.stop();
+        mediaRecorder.release();
+        mediaRecorder = null;
+        Toast.makeText(
+                getApplicationContext(),  "recording stopped", Toast.LENGTH_SHORT)
+                .show();
     }
 
 

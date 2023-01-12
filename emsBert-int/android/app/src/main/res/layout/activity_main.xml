@@ -73,7 +73,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="10dp"
-                android:text="Hold to Speak"
+                android:text="Click to Record"
                 android:textAlignment="gravity" />
 
         </LinearLayout>
