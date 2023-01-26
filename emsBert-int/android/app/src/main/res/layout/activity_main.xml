@@ -44,37 +44,20 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="311dp"
+            <Button
+                android:id="@+id/recognize"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/play"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="10dp"
-                    android:text="Play audio" />
-
-                <Button
-                    android:id="@+id/recognize"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Transcribe" />
-
-            </LinearLayout>
+                android:text="Play old samples" />
 
             <Button
                 android:id="@+id/playEMSAssist"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="10dp"
-                android:text="Click to Record"
-                android:textAlignment="gravity" />
+                android:text="Record New samples" />
 
         </LinearLayout>
 

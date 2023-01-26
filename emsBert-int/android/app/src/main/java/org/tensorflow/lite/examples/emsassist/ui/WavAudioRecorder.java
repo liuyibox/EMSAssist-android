@@ -13,6 +13,7 @@ import android.util.Log;
 public class WavAudioRecorder {
 //	private final static int[] sampleRates = {44100, 22050, 11025, 8000};
 	private final static int sampleRate = 16000;
+	private final static String TAG = "WavAudioRecorder";
 	public static WavAudioRecorder getInstanse() {
 		WavAudioRecorder result = null;
 		int i=0;
@@ -92,10 +93,13 @@ public class WavAudioRecorder {
 			}
 			int numOfBytes = audioRecorder.read(buffer, 0, buffer.length); // read audio data to buffer
 //			Log.d(WavAudioRecorder.this.getClass().getName(), state + ":" + numOfBytes);
-			try { 
-				randomAccessWriter.write(buffer); 		  // write audio data to file
-				payloadSize += buffer.length;
+			try {
+				if(numOfBytes != 0) {
+					randomAccessWriter.write(buffer);          // write audio data to file
+					payloadSize += buffer.length;
+				}
 			} catch (IOException e) {
+//				Log.i(TAG, "numOfBytes = " + numOfBytes);
 				Log.e(WavAudioRecorder.class.getName(), "Error occured in updateListener, recording is aborted");
 				e.printStackTrace();
 			}

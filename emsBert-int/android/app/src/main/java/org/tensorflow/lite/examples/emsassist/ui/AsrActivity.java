@@ -111,7 +111,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
     private WavAudioRecorder mRecorder;
     private String mRecordFilePath;
 
-    private final static String TAG = "TfLiteASR";
+    private final static String TAG = "AsrActivity";
     private final static int SAMPLE_RATE = 16000;
     private final static int DEFAULT_AUDIO_DURATION = -1;
     private final static String TFLITE_FILE = "emsConformer.tflite";
@@ -195,20 +195,20 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
         audioClipSpinner.setAdapter(adapter);
         audioClipSpinner.setOnItemSelectedListener(this);
 
-        playAudioButton = findViewById(R.id.play);
-        playAudioButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                try (AssetFileDescriptor assetFileDescriptor = getAssets().openFd(wavFilename)) {
-                    mediaPlayer.reset();
-                    mediaPlayer.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
-                    mediaPlayer.prepare();
-                } catch (Exception e) {
-                    Log.e(TAG, e.getMessage());
-                }
-                mediaPlayer.start();
-            }
-        });
+//        playAudioButton = findViewById(R.id.play);
+//        playAudioButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                try (AssetFileDescriptor assetFileDescriptor = getAssets().openFd(wavFilename)) {
+//                    mediaPlayer.reset();
+//                    mediaPlayer.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
+//                    mediaPlayer.prepare();
+//                } catch (Exception e) {
+//                    Log.e(TAG, e.getMessage());
+//                }
+//                mediaPlayer.start();
+//            }
+//        });
 
         transcribeButton = findViewById(R.id.recognize);
         resultTextview = findViewById(R.id.result);
@@ -217,7 +217,11 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onClick(View view) {
-                try {
+                try (AssetFileDescriptor assetFileDescriptor = getAssets().openFd(wavFilename)){
+                    mediaPlayer.reset();
+                    mediaPlayer.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
+                    mediaPlayer.prepare();
+
                     Log.i(TAG, "Conformer preprocessing starts after Click");
                     long conf_prepros_start = System.currentTimeMillis();
                     float audioFeatureValues[] = jLibrosa.loadAndRead(copyWavFileToCache(wavFilename), SAMPLE_RATE, DEFAULT_AUDIO_DURATION);
@@ -272,9 +276,18 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 }
+                mediaPlayer.start();
             }
         });
 
+
+        // Setup QA client to and background thread to run inference.
+        HandlerThread handlerThread = new HandlerThread("QAClient");
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
+        qaClient = new QaClient(this);
+
+//        IntBuffer outputBuffer = IntBuffer.allocate(20000);
 
         playEMSAssistButton = findViewById(R.id.playEMSAssist);
         playEMSAssistButton.setOnClickListener(new View.OnClickListener() {
@@ -297,31 +310,27 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                         playEMSAssistButton.setText(R.string.click_to_stop);
 //                        STATE_MIC = false;
                     } else if (WavAudioRecorder.State.ERROR == mRecorder.getState()) {
-//                        mRecorder.release();
+                        mRecorder.release();
+//                        mRecorder.reset();
                         mRecorder = WavAudioRecorder.getInstanse();
-//                        mRecorder.setOutputFile(mRecordFilePath);
+                        mRecorder.setOutputFile(mRecordFilePath);
                         playEMSAssistButton.setText(R.string.click_to_record);
                     } else {
                         mRecorder.stop();
+//                        Log.i(TAG, "after stop mRecorder state: " + mRecorder.getState());
                         mRecorder.reset();
+//                        Log.i(TAG, "after stop/reset mRecorder state: " + mRecorder.getState());
+//                        mRecorder.prepare();
                         playEMSAssistButton.setText(R.string.click_to_record);
-//                    }
-//
-//                    if(STATE_MIC){
-//                        startRecording();
-//                        playEMSAssistButton.setText(R.string.click_to_stop);
-//                        STATE_MIC = false;
-//                    }else{
-//                        stopRecording();
-//                        playEMSAssistButton.setText(R.string.click_to_record);
-//                        STATE_MIC = true;
 
+//                        try {
                         Log.i(TAG, "Conformer preprocessing starts after Click");
                         long conf_prepros_start = System.currentTimeMillis();
                         float audioFeatureValues[] = jLibrosa.loadAndRead(mRecordFilePath, SAMPLE_RATE, DEFAULT_AUDIO_DURATION);
 
                         Object[] inputArray = {audioFeatureValues};
                         IntBuffer outputBuffer = IntBuffer.allocate(2000);
+//                            outputBuffer.clear();
 
                         Map<Integer, Object> outputMap = new HashMap<>();
                         outputMap.put(0, outputBuffer);
@@ -337,7 +346,7 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                         Log.i(TAG, "******** Conformer preprocessing Latency : " + conf_prepros_latency);
 
                         long conf_infer_start = System.currentTimeMillis();
-                        Log.i(TAG, "Called the Conformer model for inference...");
+                        Log.i(TAG, "Calling the Conformer model for inference...");
                         tfLiteASR.runForMultipleInputsOutputs(inputArray, outputMap);
                         long conf_infer_latency = System.currentTimeMillis() - conf_infer_start;
                         Log.i(TAG, "******** Conformer Latency : " + conf_infer_latency);
@@ -349,6 +358,9 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                         outputBuffer.get(outputArray);
                         StringBuilder finalResult = new StringBuilder();
                         for (int i=0; i < outputSize; i++) {
+//                                if(!isEnglishLetter(outputArray[i])){
+//                                    throw new java.lang.Error("asr outputs non-English characters");
+//                                }
                             char c = (char) outputArray[i];
                             if (outputArray[i] != 0) {
                                 finalResult.append((char) outputArray[i]);
@@ -368,9 +380,12 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
                         Log.i(TAG, "Got result from predict function on myResult");
                         resultTextview.setText(textToFeed);
                         predictionView.setText(display);
+
+//                        tfLiteModel = null;
+//                        tfLiteASR = null;
                     }
 
-                    Log.i(TAG, "after click mRecorder state: " + mRecorder.getState());
+//                    Log.i(TAG, "after click mRecorder state: " + mRecorder.getState());
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 }
@@ -378,11 +393,19 @@ public class AsrActivity extends AppCompatActivity implements AdapterView.OnItem
 
         });
 
-        // Setup QA client to and background thread to run inference.
-        HandlerThread handlerThread = new HandlerThread("QAClient");
-        handlerThread.start();
-        handler = new Handler(handlerThread.getLooper());
-        qaClient = new QaClient(this);
+//        // Setup QA client to and background thread to run inference.
+//        HandlerThread handlerThread = new HandlerThread("QAClient");
+//        handlerThread.start();
+//        handler = new Handler(handlerThread.getLooper());
+//        qaClient = new QaClient(this);
+    }
+
+    private boolean isEnglishLetter(int asciiCode){
+        if((asciiCode >= 65 && asciiCode <= 90) || (asciiCode >= 97 && asciiCode <= 122)){
+            return true;
+        }else{
+            return false;
+        }
     }
 
     private void startRecording() {

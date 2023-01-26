@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Speech recognition</string>
-    <string name="click_to_stop">Click to Stop</string>
-    <string name="click_to_record">Click to Record</string>
+    <string name="click_to_stop">Stop Recording</string>
+    <string name="click_to_record">Record New Samples</string>
 </resources>
