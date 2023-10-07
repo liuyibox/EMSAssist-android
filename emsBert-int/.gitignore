@@ -1,8 +1,0 @@
-bin/
-build/
-tmp/
-logs/
-jar/
-android/app/build/
-android/.idea/
-android/.gradle/

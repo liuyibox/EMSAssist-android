@@ -4,6 +4,7 @@ tmp/
 logs/
 jar/
 android/app/build/
-
+*.idea/
+*.gradle/
 #*.apk
 #*.tflite
