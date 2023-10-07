@@ -5,5 +5,5 @@ logs/
 jar/
 android/app/build/
 
-*.apk
-*.tflite
+#*.apk
+#*.tflite
